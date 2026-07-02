@@ -56,8 +56,6 @@ jobs:
 
   # ─────────────────────────────────────────
   # JOB 3: Notifikasi Slack — SUKSES
-  # always() dipakai agar job ini tetap jalan
-  # lalu kita cek manual status lint & build
   # ─────────────────────────────────────────
   notify-success:
     name: Notify Slack (Success)
@@ -78,15 +76,16 @@ jobs:
           curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d "{
-              \"text\": \"*CI PASSED* — ${REPO}\",
+              \"text\": \"halo ada yang push ke github mu nih!\",
               \"attachments\": [
                 {
                   \"color\": \"#36a64f\",
                   \"fields\": [
-                    { \"title\": \"Status\",       \"value\": \"Sukses\",        \"short\": true },
-                    { \"title\": \"Branch\",       \"value\": \"${BRANCH}\",     \"short\": true },
-                    { \"title\": \"Pushed by\",    \"value\": \"${ACTOR}\",      \"short\": true },
-                    { \"title\": \"Commit\",       \"value\": \"<${COMMIT_URL}|${SHORT_SHA}> — ${COMMIT_MSG}\", \"short\": false },
+                    { \"title\": \"Status\",         \"value\": \"CI PASSED\",     \"short\": true },
+                    { \"title\": \"Branch\",         \"value\": \"${BRANCH}\",     \"short\": true },
+                    { \"title\": \"Pushed by\",      \"value\": \"${ACTOR}\",      \"short\": true },
+                    { \"title\": \"Repository\",     \"value\": \"${REPO}\",       \"short\": true },
+                    { \"title\": \"Commit\",         \"value\": \"<${COMMIT_URL}|${SHORT_SHA}> — ${COMMIT_MSG}\", \"short\": false },
                     { \"title\": \"Lihat pipeline\", \"value\": \"<${RUN_URL}|Buka di GitHub Actions>\", \"short\": false }
                   ],
                   \"footer\": \"GitHub Actions\",
@@ -97,7 +96,6 @@ jobs:
 
   # ─────────────────────────────────────────
   # JOB 4: Notifikasi Slack — GAGAL
-  # Jalan kalau lint ATAU build ada yang GAGAL
   # ─────────────────────────────────────────
   notify-failure:
     name: Notify Slack (Failure)
@@ -115,7 +113,6 @@ jobs:
           REPO="${{ github.repository }}"
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          # Tentukan job mana yang gagal
           LINT_STATUS="${{ needs.lint.result }}"
           BUILD_STATUS="${{ needs.build.result }}"
           FAILED_JOBS=""
@@ -128,16 +125,16 @@ jobs:
           curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d "{
-              \"text\": \"*CI FAILED* — ${REPO}\",
+              \"text\": \"halo ada yang push ke github mu nih!\",
               \"attachments\": [
                 {
                   \"color\": \"#e01e5a\",
                   \"fields\": [
-                    { \"title\": \"Status\",       \"value\": \"GAGAL\",              \"short\": true },
-                    { \"title\": \"Branch\",       \"value\": \"${BRANCH}\",          \"short\": true },
-                    { \"title\": \"Pushed by\",    \"value\": \"${ACTOR}\",           \"short\": true },
-                    { \"title\": \"Job gagal\",    \"value\": \"${FAILED_JOBS}\",     \"short\": true },
-                    { \"title\": \"Commit\",       \"value\": \"<${COMMIT_URL}|${SHORT_SHA}> — ${COMMIT_MSG}\", \"short\": false },
+                    { \"title\": \"Status\",          \"value\": \"CI FAILED\",        \"short\": true },
+                    { \"title\": \"Branch\",          \"value\": \"${BRANCH}\",        \"short\": true },
+                    { \"title\": \"Pushed by\",       \"value\": \"${ACTOR}\",         \"short\": true },
+                    { \"title\": \"Job gagal\",       \"value\": \"${FAILED_JOBS}\",   \"short\": true },
+                    { \"title\": \"Commit\",          \"value\": \"<${COMMIT_URL}|${SHORT_SHA}> — ${COMMIT_MSG}\", \"short\": false },
                     { \"title\": \"Lihat log error\", \"value\": \"<${RUN_URL}|Buka di GitHub Actions>\", \"short\": false }
                   ],
                   \"footer\": \"GitHub Actions\",
