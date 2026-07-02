@@ -11,7 +11,7 @@ jobs:
   # JOB 1: Lint
   # ─────────────────────────────────────────
   lint:
-    name: 🔍 Lint
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
   # JOB 2: Build (hanya jalan kalau lint lulus)
   # ─────────────────────────────────────────
   build:
-    name: 🔨 Build
+    name: Build
     runs-on: ubuntu-latest
     needs: [lint]
     steps:
@@ -56,105 +56,92 @@ jobs:
 
   # ─────────────────────────────────────────
   # JOB 3: Notifikasi Slack — SUKSES
-  # Hanya jalan kalau lint & build keduanya LULUS
+  # always() dipakai agar job ini tetap jalan
+  # lalu kita cek manual status lint & build
   # ─────────────────────────────────────────
   notify-success:
-    name: ✅ Notify Slack (Success)
+    name: Notify Slack (Success)
     runs-on: ubuntu-latest
     needs: [lint, build]
-    if: success()
+    if: always() && needs.lint.result == 'success' && needs.build.result == 'success'
     steps:
-      - name: Send success notification to Slack
-        uses: slackapi/slack-github-action@v1.27.0
-        with:
-          payload: |
-            {
-              "text": "✅ *CI PASSED* — `${{ github.repository }}`",
-              "attachments": [
+      - name: Send success to Slack
+        run: |
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          ACTOR="${{ github.actor }}"
+          BRANCH="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"text\": \"*CI PASSED* — ${REPO}\",
+              \"attachments\": [
                 {
-                  "color": "#36a64f",
-                  "fields": [
-                    {
-                      "title": "Branch",
-                      "value": "`${{ github.ref_name }}`",
-                      "short": true
-                    },
-                    {
-                      "title": "Triggered by",
-                      "value": "`${{ github.actor }}`",
-                      "short": true
-                    },
-                    {
-                      "title": "Commit",
-                      "value": "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha != '' && github.sha || 'N/A' }}>",
-                      "short": false
-                    },
-                    {
-                      "title": "Message",
-                      "value": "${{ github.event.head_commit.message }}",
-                      "short": false
-                    }
+                  \"color\": \"#36a64f\",
+                  \"fields\": [
+                    { \"title\": \"Status\",       \"value\": \"Sukses\",        \"short\": true },
+                    { \"title\": \"Branch\",       \"value\": \"${BRANCH}\",     \"short\": true },
+                    { \"title\": \"Pushed by\",    \"value\": \"${ACTOR}\",      \"short\": true },
+                    { \"title\": \"Commit\",       \"value\": \"<${COMMIT_URL}|${SHORT_SHA}> — ${COMMIT_MSG}\", \"short\": false },
+                    { \"title\": \"Lihat pipeline\", \"value\": \"<${RUN_URL}|Buka di GitHub Actions>\", \"short\": false }
                   ],
-                  "footer": "GitHub Actions",
-                  "ts": "${{ github.event.head_commit.timestamp }}"
+                  \"footer\": \"GitHub Actions\",
+                  \"footer_icon\": \"https://github.githubassets.com/favicons/favicon.png\"
                 }
               ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+            }"
 
   # ─────────────────────────────────────────
   # JOB 4: Notifikasi Slack — GAGAL
   # Jalan kalau lint ATAU build ada yang GAGAL
   # ─────────────────────────────────────────
   notify-failure:
-    name: ❌ Notify Slack (Failure)
+    name: Notify Slack (Failure)
     runs-on: ubuntu-latest
     needs: [lint, build]
-    if: failure()
+    if: always() && (needs.lint.result == 'failure' || needs.build.result == 'failure')
     steps:
-      - name: Send failure notification to Slack
-        uses: slackapi/slack-github-action@v1.27.0
-        with:
-          payload: |
-            {
-              "text": "❌ *CI FAILED* — `${{ github.repository }}`",
-              "attachments": [
+      - name: Send failure to Slack
+        run: |
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          ACTOR="${{ github.actor }}"
+          BRANCH="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Tentukan job mana yang gagal
+          LINT_STATUS="${{ needs.lint.result }}"
+          BUILD_STATUS="${{ needs.build.result }}"
+          FAILED_JOBS=""
+          if [ "$LINT_STATUS" = "failure" ]; then FAILED_JOBS="Lint"; fi
+          if [ "$BUILD_STATUS" = "failure" ]; then
+            if [ -n "$FAILED_JOBS" ]; then FAILED_JOBS="${FAILED_JOBS}, Build"
+            else FAILED_JOBS="Build"; fi
+          fi
+
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"text\": \"*CI FAILED* — ${REPO}\",
+              \"attachments\": [
                 {
-                  "color": "#e01e5a",
-                  "fields": [
-                    {
-                      "title": "Branch",
-                      "value": "`${{ github.ref_name }}`",
-                      "short": true
-                    },
-                    {
-                      "title": "Triggered by",
-                      "value": "`${{ github.actor }}`",
-                      "short": true
-                    },
-                    {
-                      "title": "Commit",
-                      "value": "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha != '' && github.sha || 'N/A' }}>",
-                      "short": false
-                    },
-                    {
-                      "title": "Message",
-                      "value": "${{ github.event.head_commit.message }}",
-                      "short": false
-                    },
-                    {
-                      "title": "Detail",
-                      "value": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Lihat log di sini>",
-                      "short": false
-                    }
+                  \"color\": \"#e01e5a\",
+                  \"fields\": [
+                    { \"title\": \"Status\",       \"value\": \"GAGAL\",              \"short\": true },
+                    { \"title\": \"Branch\",       \"value\": \"${BRANCH}\",          \"short\": true },
+                    { \"title\": \"Pushed by\",    \"value\": \"${ACTOR}\",           \"short\": true },
+                    { \"title\": \"Job gagal\",    \"value\": \"${FAILED_JOBS}\",     \"short\": true },
+                    { \"title\": \"Commit\",       \"value\": \"<${COMMIT_URL}|${SHORT_SHA}> — ${COMMIT_MSG}\", \"short\": false },
+                    { \"title\": \"Lihat log error\", \"value\": \"<${RUN_URL}|Buka di GitHub Actions>\", \"short\": false }
                   ],
-                  "footer": "GitHub Actions",
-                  "ts": "${{ github.event.head_commit.timestamp }}"
+                  \"footer\": \"GitHub Actions\",
+                  \"footer_icon\": \"https://github.githubassets.com/favicons/favicon.png\"
                 }
               ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+            }"
