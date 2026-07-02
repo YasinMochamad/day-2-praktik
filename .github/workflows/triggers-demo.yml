@@ -14,6 +14,12 @@ on:
   pull_request:
     branches: [main]
 
+  # Case D: saat ada tag versi (mis. v1.2.0) -> cocok untuk release
+  # (dipisah karena push tag beda dari push branch)
+  # Aktifkan dengan menaruh di push.tags jika perlu:
+  # push:
+  #   tags: ['v*.*.*']
+
   # Case E: terjadwal (cron) — "nightly build"
   schedule:
     - cron: "0 22 * * *" # tiap hari 22:00 UTC
@@ -34,11 +40,11 @@ jobs:
         run: |
           echo "Pipeline dipicu oleh: ${{ github.event_name }}"
           echo "Branch/Ref: ${{ github.ref }}"
-          echo "Alasan: ${{ inputs.alasan }}"
+          echo "Alasan: ${{ inputs.alasan }}" # TAMBAHAN: tampilkan input manual
 
-  lint-and-build:
+  lint-and-build: # TAMBAHAN: job baru lint & build, jalan setelah info
     runs-on: ubuntu-latest
-    needs: info
+    needs: info # TAMBAHAN: tunggu job info selesai dulu
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
