@@ -1,0 +1,6 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+PROJECT_IDENTIFICATION_day2.txt
