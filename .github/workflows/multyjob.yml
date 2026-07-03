@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "20", cache: "npm" }
+        with: { node-version: "24", cache: "npm" }
       - run: npm ci
       - run: npm run lint
 
@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "20", cache: "npm" }
+        with: { node-version: "24", cache: "npm" }
       - name: Install dependencies
         run: npm ci
       - name: Run unit tests + coverage
@@ -60,14 +60,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ["18", "20", "22"]
+        node: ["20", "22", "24"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: "${{ matrix.node }}", cache: "npm" }
       - run: npm ci
       - run: npm run build
-      - if: matrix.node == '20'
+      - if: matrix.node == '24'
         uses: actions/upload-artifact@v4
         with: { name: build-info, path: dist/build-info.json }
 
@@ -104,27 +104,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "20", cache: "npm" }
+        with: { node-version: "24", cache: "npm" }
       - name: Install dependencies
         run: npm ci
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with: { name: build-info, path: dist/ }
-      - name: Download coverage artifact
-        uses: actions/download-artifact@v4
-        with: { name: coverage, path: coverage/ }
-      - name: Generate site
-        run: npm run site
       - name: Simulate staging deploy
         run: |
           echo "📦 Deploy artifact ${{ github.sha }} ke STAGING"
           node -e "console.log(require('./src/stringUtils').capitalize('deploy sukses'))"
-      - name: Upload Pages artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: github-pages
-          path: public/
-          retention-days: 7
 
   # ─────────────────────────────────────────
   # JOB 6: Deploy Production — MANUAL GATE
@@ -163,7 +149,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "20", cache: "npm" }
+        with: { node-version: "24", cache: "npm" }
       - name: Install dependencies
         run: npm ci
       - name: Download build artifact
