@@ -1,0 +1,12 @@
+pages:
+  extends: .node_base
+  stage: deploy
+  needs: [test_job, build_job]
+  script:
+    - npm run build
+    - npm run test:ci
+    - npm run site
+  artifacts:
+    paths: [public]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
